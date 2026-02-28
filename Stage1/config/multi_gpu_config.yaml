@@ -1,0 +1,60 @@
+# Qwen3-VL 多卡微调配置文件
+# ==================================
+
+# 微调方法配置
+finetune_method: "lora"  # 微调方法: "lora" 或 "full" (全量微调)
+
+# 模型配置
+model_name: "../Qwen3-VL-2B-Instruct"  # 基础模型路径
+model_dtype: "bfloat16"  # 模型精度 (bfloat16 通常更适合大模型)
+
+# 数据配置
+dataset_path: "./data/vlm_finetune_dataset_fixed/train_0.json" # 训练数据集路径
+# dataset_path: "./data/dataset.jsonl" # 训练数据集路径
+validation_split: 0.1  # 验证集比例
+
+# multi_gpu_config.yaml 关键修正
+lora_r: 8                  # 从64降至8
+lora_alpha: 32             # 从16升至32
+lora_dropout: 0.1          # 增加正则化
+target_modules:            # 仅保留核心层
+  - "q_proj"
+  - "k_proj"
+  - "v_proj"
+  - "o_proj"
+  - "gate_proj"
+  - "up_proj"
+  - "down_proj"
+# 移除: embed_tokens, lm_head（这些层通常应冻结）
+
+
+per_device_train_batch_size: 2  # 从6降至2
+gradient_accumulation_steps: 4  # 梯度累积步数 (调节以保持与单卡相似的有效批次大小)
+learning_rate: 2.0e-04          # 学习率
+weight_decay: 0.2             # 权重衰减系数
+warmup_ratio: 0.1               # 预热比例 (学习率预热)
+
+# 日志和保存配置
+logging_steps: 10               # 日志记录间隔步数
+save_steps: 60                 # 模型保存间隔步数
+eval_steps: 20                  # 验证评估间隔步数
+save_total_limit: 5             # 最大保存检查点数量
+output_dir: "./qwen3-vl-2b-instruct-lora"  # 输出目录
+overwrite_output_dir: true      # 是否覆盖输出目录
+
+# 训练优化设置
+gradient_checkpointing: true    # 是否启用梯度检查点节省显存
+fp16: false                    # 是否使用fp16混合精度训练
+bf16: true                     # 是否使用bfloat16混合精度训练
+max_grad_norm: 1.0              # 梯度裁剪最大范数
+logging_dir: "./logs"           # 日志目录
+
+# 分布式训练配置
+ddp_find_unused_parameters: false  # DDP是否查找未使用的参数
+dataloader_drop_last: false        # 是否丢弃最后一个不完整的批次
+local_rank: 0                      # 本地Rank (由torch.distributed自动设置)
+
+# 数据加载器设置
+dataloader_pin_memory: true        # 是否固定内存 (多卡环境下通常设为true)
+dataloader_num_workers: 8          # 数据加载器工作进程数 (可适当增加以利用多核CPU)
+max_steps: -1                      # 最大训练步数 (-1表示无限制，使用epochs)

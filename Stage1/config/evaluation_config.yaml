@@ -1,0 +1,22 @@
+# Qwen3-VL 模型评估配置文件
+# ==================================
+
+# 模型配置
+base_model_path: "D:/MicroAgent/Qwen3-VL-2B-Instruct"  # 基础模型路径
+
+# 模型搜索路径配置 (用于寻找微调后的模型)
+finetuned_model_paths:
+  - "D:/MicroAgent/Stage1/ckpt/checkpoint-60"              # LoRA适配器路径
+
+
+# 数据配置
+test_dataset_path: "D:/MicroAgent/Stage2/data/vlm_finetune_dataset_fixed/testset.json"  # 测试数据集路径
+
+# 评估配置
+max_test_samples: 20  # 最大测试样本数(减少以加快测试)
+max_preview_samples: 20  # 结果预览样本数
+results_output_dir: "./logs/"  # 结果输出目录
+
+# 生成配置
+max_tokens: 256  # 最大生成令牌数
+temperature: 0.9  # 生成温度
