@@ -1,174 +1,130 @@
-# MicroAgent 显微镜自动对焦项目
+# Micro-Agent: Mitigating Catastrophic Forgetting in Spatial Prediction Tasks through Two-Stage Adaptive Optimization
 
-## 项目概述
+## Overview
 
-显微镜自动对焦系统，基于深度学习的多专家融合方案。
+This project implements a vision-language model (VLM) based micro-agent for microscope image analysis, specifically designed for predicting motor movement direction and step count in autofocus applications. The proposed method addresses **catastrophic forgetting** in spatial prediction tasks through a novel **Two-Stage Adaptive Optimization** approach.
 
-## 项目结构
+## Key Features
+
+- **Base Model**: Qwen3-VL-2B-Instruct
+- **Fine-tuning Method**: LoRA (Low-Rank Adaptation)
+- **Task**: Microscope image analysis - predict motor direction (+/-) and distance (steps)
+- **Two-Stage Adaptive Optimization**: Combines CNN-based feature extraction with VLM fine-tuning to preserve foundational knowledge while learning new spatial prediction tasks
+
+## Project Structure
 
 ```
 MicroAgent/
-├── Qwen3-VL-2B-Instruct/      # Qwen3-VL-2B基础模型
-├── Stage1/                    # VLM微调阶段
-│   ├── config/               # 配置文件
-│   ├── ckpt/                 # LoRA权重
-│   ├── MicroAgent.py        # VLM能力展示
-│   └── evaluate_finetuning_final.py
-├── Stage2/                    # 三专家融合阶段
-│   ├── data/                 # 数据集
-│   │   └── vlm_finetune_dataset_fixed/
-│   │       ├── train_only.json   # 训练集126条
-│   │       ├── testset.json      # 测试集14条
-│   │       └── images/           # 图片
-│   ├── docs/                  # 实验结果图片
-│   ├── train_adapted.py       # CNN+手工特征训练
-│   ├── train_three_expert.py # 三专家融合训练
-│   ├── model_adapted.pt      # CNN专家模型
-│   └── three_expert_model.pt # 三专家融合模型
-└── environment.yaml          # 环境配置
+├── Stage1/                    # VLM Fine-tuning Stage
+│   ├── MicroAgent.py          # Main inference script
+│   ├── qwen3vl_finetune_proper_multi_gpu.py  # Fine-tuning script
+│   ├── evaluate_finetuning_final.py          # Evaluation script
+│   └── ckpt/checkpoint-60/    # Fine-tuned LoRA weights
+│
+├── Stage2/                    # CNN + Adaptive Optimization Stage
+│   ├── train_adapted.py       # Two-stage training script
+│   ├── train_three_expert.py  # Multi-expert training
+│   └── data/                  # Training datasets
+│
+├── Qwen3-VL-2B-Instruct/      # Base model files
+└── config/                    # Configuration files
 ```
 
-## 数据集
-
-- **训练集**: 126条 (Stage2/data/vlm_finetune_dataset_fixed/train_only.json)
-- **测试集**: 14条 (Stage2/data/vlm_finetune_dataset_fixed/testset.json)
-- **图片**: Stage2/data/vlm_finetune_dataset_fixed/images/
-
-## 实验阶段
-
-### Stage 1: VLM微调 (Stage1)
-
-使用LoRA微调Qwen3-VL-2B-Instruct模型。
-
-**模型路径**:
-- 基础模型: `Qwen3-VL-2B-Instruct/`(需要自行下载)
-- LoRA权重: `Stage1/ckpt/checkpoint-60/`
-
-#### 1. MicroAgent.py - VLM能力展示
-
-VLM模型的三个能力演示：
-- 纯文本对话功能
-- 图文对话功能（描述图片内容）
-- 显微镜对焦动作预测（双图像帧分析）
-
-**运行结果示例**:
-```bash
-cd D:\MicroAgent\Stage1
-conda activate qwen3vl
-python MicroAgent.py config/evaluation_config.yaml
-```
-
-输出：
-```
-[TEST 1] Text Chat Test
-[User] 显微镜使用操作流程与注意事项
-[Model] Response: 显微镜是生物学、医学、材料科学等众多领域中不可或缺的重要实验工具...
-
-[TEST 2] Image Chat Test
-[Image] Path: D:\MicroAgent\Stage2\data\vlm_finetune_dataset_fixed\images\sample_0_0_0.png
-[User] 请描述这张图片中金属工件是什么样的
-[Model] Response: 这张图片展示了一个由金属材料制成的、具有特定几何形状和表面特征的工件...
-
-[TEST 3] Action Prediction Test
-Frame 1: sample_0_0_0.png
-Frame 2: sample_0_0_1.png
-[Result]: Direction: Left (-), Distance: 1 pixels
-```
-
-#### 2. evaluate_finetuning_final.py - Stage1结果量化
-
-对微调后的VLM模型在测试集上进行评估，输出方向准确率、距离误差等量化指标。
+## Installation
 
 ```bash
-cd D:\MicroAgent\Stage1
-conda activate qwen3vl
+# Create conda environment
+conda env create -f environment.yaml
+conda activate microagent
+
+# Or install dependencies manually
+pip install torch transformers peft qwen-vl-utils
+pip install opencv-python numpy pillow
+```
+
+## Model and Weights Download
+
+Download the base Qwen3-VL-2B-Instruct model:
+
+```bash
+modelscope download --model qwen/Qwen3-VL-2B-Instruct
+```
+Weights:https://pan.zju.edu.cn/share/843a3a8b6f4cc6e774b1cb3075
+## Usage
+
+### 1. Fine-tuning (Stage 1)
+
+```bash
+cd Stage1
+python qwen3vl_finetune_proper_multi_gpu.py --config config/multi_gpu_config.yaml
+```
+
+### 2. Two-Stage Training (Stage 2)
+
+```bash
+cd Stage2
+python train_adapted.py
+```
+
+### 3. Evaluation
+
+```bash
+cd Stage1
 python evaluate_finetuning_final.py config/evaluation_config.yaml
 ```
 
-### Stage 2: 三专家融合 (Stage2)
+### 4. Inference
 
-将CNN专家、手工特征专家和VLM专家进行融合训练。
+```python
+from MicroAgent import ActionPredictor
+from PIL import Image
 
-#### 2.1 CNN + 手工特征 (with out VLM 消融实验)
+# Initialize model
+predictor = ActionPredictor(
+    model_path="D:/MicroAgent/Qwen3-VL-2B-Instruct",
+    adapter_path="D:/MicroAgent/Stage1/ckpt/checkpoint-60"
+)
 
+# Load microscope images
+img1 = Image.open("microscope_image_1.png")
+img2 = Image.open("microscope_image_2.png")
 
-
-```bash
-cd D:\MicroAgent\Stage2
-conda activate qwen3vl
-python train_adapted.py --mode train
-python train_adapted.py --mode eval
-```
-![消融实验](./Stage2/docs/消融实验2expert.png)
-#### 2.2 三专家融合 (CNN + 手工 + VLM)
-
-
-
-```bash
-cd D:\MicroAgent\Stage2
-conda activate qwen3vl
-python train_three_expert.py --mode train
-python train_three_expert.py --mode eval
-```
-![三专家融合](./Stage2/docs/实验结果.png)
-## 模型结构
-
-### CNN专家 + 手工特征
-
-```
-输入图片 -> 3层CNN(16通道) -> Linear(16*200*200->50)
-                   ↓
-          手工特征(4维: entropy, log(brenner), log(variance), log(energy))
-                   ↓
-          拼接(50*2+8=108) -> Linear(108->40) -> Linear(40->10) -> Linear(10->2)
-          输出: [distance, direction]
+# Predict motor movement
+result = predictor.predict_direction_and_distance([img1, img2])
+print(result)
 ```
 
-### 三专家融合
+## Experimental Results
 
-```
-CNN专家: 3层CNN + Linear -> 100维 -> 32维
-手工特征: 4维 x 2 = 8维 -> 32维  
-VLM专家: Qwen3VL-2B + LoRA -> 2维(direction, distance) -> 32维
+### Evaluation on Test Set (14 samples)
 
-各专家特征归一化后拼接: 32*3=96维 -> 64 -> 32 -> 2
-```
+| Model | Direction Accuracy | Avg Distance Error |
+|-------|-------------------|-------------------|
+| Fine-tuned | **71.43%** | **5.29** |
+| Base | 14.29% | 7.00 |
 
+**Improvements:**
+- Direction accuracy: +57.14% (400% relative improvement)
+- Distance error: -1.71 steps reduction
 
+## Two-Stage Adaptive Optimization
 
-## 环境配置
+The proposed method mitigates catastrophic forgetting through:
 
-```bash
-# 创建环境
-conda env create -f environment.yaml
+1. **Stage 1 - Feature Extraction**: CNN-based handcrafted feature extraction for spatial information
+2. **Stage 2 - VLM Fine-tuning**: LoRA-based adaptation with frozen visual encoder to preserve pre-trained knowledge
+3. **Adaptive Learning Rate**: Separate optimization schedules for different model components
 
-# 或者激活已有环境
-conda activate qwen3vl
-```
+## Citation
 
-## 依赖
-
-```
-torch>=2.0.0
-torchvision>=0.15.0
-numpy
-pillow
-opencv-python
-transformers>=4.47.0
-peft
-accelerate
-sentencepiece
-protobuf
-safetensors
-huggingface-hub
-scipy
-matplotlib
-scikit-learn
+```bibtex
+@article{microagent2026,
+  title={Micro-Agent: Mitigating Catastrophic Forgetting in Spatial Prediction Tasks through Two-Stage Adaptive Optimization},
+  author={},
+  year={2026}
+}
 ```
 
-## 注意事项
+## License
 
-1. VLM训练需要 `conda activate qwen3vl` 环境
-2. 路径已统一到 `Stage2/data/` 目录
-3. 标签提取使用正则: `"direction":\s*"([+-])"`
-4. VLM特征缓存: `vlm_train_cache.json`, `vlm_test_cache.json`
+MIT License
