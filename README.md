@@ -3,7 +3,7 @@
 ## Project Overview
 
 An automated microscope focusing system based on a deep learning multi-expert fusion approach.
-
+![Micro-Agent](./Stage2/docs/MicroAgent.png)
 ## Project Structure
 
 ```
