@@ -1,0 +1,27 @@
+name: qwen3vl
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - torch>=2.0.0
+    - torchvision>=0.15.0
+    - numpy
+    - pillow
+    - opencv-python
+    - transformers>=4.47.0
+    - peft
+    - accelerate
+    - sentencepiece
+    - protobuf
+    - safetensors
+    - huggingface-hub
+    - scipy
+    - matplotlib
+    - scikit-learn
+    - pyyaml
+    - tqdm
