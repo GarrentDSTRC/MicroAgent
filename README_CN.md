@@ -30,7 +30,6 @@ MicroAgent/
 
 ## 数据集
 
-- **训练集**: 126条 (Stage2/data/vlm_finetune_dataset_fixed/train_only.json)
 - **测试集**: 14条 (Stage2/data/vlm_finetune_dataset_fixed/testset.json)
 - **图片**: Stage2/data/vlm_finetune_dataset_fixed/images/
 
@@ -43,6 +42,8 @@ MicroAgent/
 **模型路径**:
 - 基础模型: `Qwen3-VL-2B-Instruct/`(需要自行下载)
 - LoRA权重: `Stage1/ckpt/checkpoint-60/`
+
+Weights:https://pan.zju.edu.cn/share/843a3a8b6f4cc6e774b1cb3075
 
 #### 1. MicroAgent.py - VLM能力展示
 
